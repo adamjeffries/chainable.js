@@ -1,0 +1,31 @@
+{
+  "name": "chainable.js",
+  "version": "0.0.1",
+  "description": "Functional Property Sequences",
+  "main": "chainable.js",
+  "scripts": {
+    "test": "mocha test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/adamjeffries/chainable.js.git"
+  },
+  "keywords": [
+    "chain",
+    "chains",
+    "chainable",
+    "chaining",
+    "sequence",
+    "sequences"
+  ],
+  "author": "Adam Jeffries",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/adamjeffries/chainable.js/issues"
+  },
+  "homepage": "https://github.com/adamjeffries/chainable.js",
+  "devDependencies": {
+    "mocha": "*",
+    "expect.js": "*"
+  }
+}
