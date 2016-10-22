@@ -1,105 +1,114 @@
 "use strict";
 
 const expect = require("expect.js"),
-  t = require("../index");
+  chainable = require("./chainable.js");
 
 
-describe("TypeDef", function() {
+
+describe("Chainable", function() {
+
+  let C1, C2;
+
+  before(function () {
+    C1 = chainable({
+      add (value, addend) { return value + (addend || 1); },
+      sum () { return Array.prototype.slice.call(arguments).reduce((a, b) => a + b, 0); },
+      print (value, prefix, suffix) { return (prefix || "") + value + (suffix || ""); }
+    });
+
+    C2 = chainable({
+      hello (value, planet) { return "hello " + value + " from " + planet; }
+    });
+  });
+
+  it("Can create independent chain constructors", function () {
+    expect(C1.register).to.be.a("function");
+    expect(C2.register).to.be.a("function");
+
+    expect(C1.add).to.be.a("function");
+    expect(C2.add).to.not.be.ok();
+
+    expect(C1.hello).to.not.be.ok();
+    expect(C2.hello).to.be.a("function");
+
+    expect(C1).to.not.be(C2);
+    expect(C1.register).to.not.be(C2.register);
+  });
 
   it("Should be an instance", function () {
-    expect(new t() instanceof t).to.be.ok();
-    expect(t() instanceof t).to.be.ok();
-    expect(t.is().is() instanceof t).to.be.ok();
-    expect(t.is.is instanceof t).to.be.ok();
-    expect(t.is.is() instanceof t).to.be.ok();
-    expect(t.is() instanceof t).to.be.ok();
-    expect(t.is().is instanceof t).to.be.ok();
-    expect(t.is().is() instanceof t).to.be.ok();
+    expect(C1.add instanceof C1).to.be.ok();
+    expect(C1.add() instanceof C1).to.be.ok();
+    expect(C1.add.add instanceof C1).to.be.ok();
+    expect(C1.add.add() instanceof C1).to.be.ok();
+    expect(C1.add().add instanceof C1).to.be.ok();
+    expect(C1.add().add() instanceof C1).to.be.ok();
+
+    expect(C2.hello instanceof C1).to.not.be.ok();
+    expect(C2.hello() instanceof C1).to.not.be.ok();
   });
 
   it("Can register function definitions", function () {
 
-    t.register("hello", function (value) {
-      return "hello " + (value || "unknown");
+    C1.register("subtract", function (value, subtrahend) {
+      return value - (subtrahend || 1);
     });
 
-    let h = t.hello.value();
-    let h2 = t.hello.value("world");
-
-    expect(h).to.be("hello unknown");
-    expect(h2).to.be("hello world");
+    expect(C1.subtract.value(1)).to.be(0);
+    expect(C1.subtract(2).value(1)).to.be(-1);
   });
 
   it("Can register object definitions", function () {
 
-    t.register("foo", {
-      is (value) {
-        return value === "bar";
+    C1.register({
+      divide (value, divisor) {
+        return value / divisor;
       },
-      to (value) {
-        return "FOO";
+      multiply (value, multiplicand) {
+        return value * multiplicand;
       }
     });
 
-    expect(t.isFoo.value("bar")).to.be(true);
-    expect(t.isFoo.value("asdf")).to.be(false);
-    expect(t.toFoo.value("bar")).to.be("bar");
-    expect(t.toFoo.value("asdf")).to.be("FOO");
-    expect(t.foo.value("bar")).to.be("bar");
-    expect(function () {
-      t.foo.value("asdf");
-    }).to.throwError(/Expected string to be a foo/);
+    expect(C1.divide(2).multiply(3).value(4)).to.be(6);
+    expect(C1.multiply(2).divide(3).value(6)).to.be(4);
   });
 
   it("Can get definitions", function () {
 
-    t.register("abc", {
-      is (value, a, b) {
-        return value === "abc";
-      },
-      to (value) {
-        return "ABC";
-      }
-    });
-
-    let def = t.abc.isAbc(8,9).toAbc(10).definition();
+    let def = C1.add.multiply(2).print("hello", "!").definition();
 
     expect(def).to.have.length(3);
-    expect(def[0][0]).to.be("abc");
-    expect(def[0][1]).to.not.be.ok();
-    expect(def[1][0]).to.be("isAbc");
-    expect(def[1][1]).to.eql({a: 8, b: 9});
-    expect(def[2][0]).to.be("toAbc");
-    expect(def[2][1]).to.not.be.ok();
+
+    expect(def[0].name).to.be("add");
+    expect(def[0].args.length).to.be(0);
+    expect(def[0].params.length).to.be(1);
+    expect(def[0].values).to.eql({});
+
+    expect(def[1].name).to.be("multiply");
+    expect(def[1].args.length).to.be(1);
+    expect(def[1].params.length).to.be(1);
+    expect(def[1].values).to.eql({multiplicand: 2});
+
+    expect(def[2].name).to.be("print");
+    expect(def[2].args.length).to.be(2);
+    expect(def[2].params.length).to.be(2);
+    expect(def[2].values).to.eql({prefix: "hello", suffix: "!"});
   });
 
   it("Can serialize", function () {
+    let def = C1.add.add([1, true, "a", {a: 1, b: true, c: "b"}]).multiply(2).print("hello", "!").serialize();
 
-    t.register("xyz", {
-      is (value, a, b) {
-        return value === "xyz";
-      },
-      to (value) {
-        return "XYZ";
-      }
-    });
-
-    let s = t.xyz.isXyz(1,"hello.",true,[1,"a,b",false]).toXyz({a:1, b: "3"}).serialize();
-    expect(s).to.be('xyz.isXyz(1,"hello.",true,[1,"a,b",false]).toXyz({"a":1,"b":"3"})');
+    expect(def).to.be('add.add([1,true,"a",{"a":1,"b":true,"c":"b"}]).multiply(2).print("hello","!")');
     expect(function () {
       var a = {}; a.a = a; // Create a circular dependency
-      t.xyz.isXyz(1,2,a).serialize();
-    }).to.throwError(/Unable to serialize argument 3 of isXyz/);
+      C1.add.add(1,2,a).serialize();
+    }).to.throwError(/Unable to serialize argument 3 of add/);
   });
 
   it("Can deserialize", function () {
-    t.register("jkl", function (value, a, b) { return value + a + b; });
-    t.register("mno", function (value, arr, obj) { return value + arr[0] + obj.a; });
+    let c1 = C1.add.multiply(2).print("hello", "!");
+    let c2 = C1(c1.serialize());
 
-    let def1 = t.jkl(1,2).mno([2, "asdf"], {a: 3, b: "234"});
-    let def2 = t(def1.serialize());
-
-    expect(def1.value(3)).to.be(def2.value(3));
+    expect(c1.value(3)).to.be(c2.value(3));
   });
 
 });
