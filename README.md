@@ -87,7 +87,7 @@ MyChain.register({
 
 > Note: Registered methods will only be available to instances created after they are defined.
 
-### .<registered method>
+### .registeredMethod
 Registered methods can be accessed as properties or functions.   They always return the instance for further chaining.
 
 ``` js
