@@ -27,7 +27,11 @@
       if (!(this instanceof Chainable)) return new Chainable(serialized);
 
       let fn = function () {
-        if (fn._chain.length) fn._chain[fn._chain.length - 1][1] = Array.prototype.slice.call(arguments);
+        if (fn._chain.length) {
+          let last = fn._chain[fn._chain.length - 1];
+          last[1] = Array.prototype.slice.call(arguments);
+          if (last[0] === "toString") return fn.serialize();
+        }
         return fn;
       };
 
