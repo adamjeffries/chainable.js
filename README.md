@@ -1,3 +1,5 @@
+# ARCHIVED / DEPRECATED
+
 # chainable.js
 > Functional Property Sequences
 
